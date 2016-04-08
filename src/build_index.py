@@ -31,29 +31,35 @@ def build_index(df,n_trees = 50,dist_metric='angular',out_dir="./"):
     for key, val in index_dict.items():
         w.writerow([key, val])
 
-def generate_sentence(start,index,patient_dict,index_dict,n_neighbors,walk_size):
+def generate_sentence(start,neighbor_dict,n_neighbors,walk_size):
     sentence = str(start)
-    current_index = patient_dict[start]
+    current_patient = start
     for i in (range(walk_size-1)):
-        neighbors = index.get_nns_by_item(i=current_index, n=n_neighbors, search_k=-1, include_distances=False)
-        next_index = neighbors[random.sample(xrange(len(neighbors)), 1)[0]]
-        next_patient = index_dict[next_index]
+        neighbors = neighbor_dict[current_patient]
+        next_patient = random.sample(neighbors, 1)[0]
         sentence += " " + next_patient
-        current_index = next_index
+        current_patient = next_patient
     return sentence
 
 
-def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 25,walks_per_patient=5,walk_size=10,out_dir="./"):
+def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 25,walks_per_patient=5,walk_size=50,out_dir="./"):
     index = AnnoyIndex(df.shape[1])
     index.load(index_file)
     patient_dict = {}
     for key, val in csv.reader(open(patient_dict_file)):
         patient_dict[key] = int(val)
-
     index_dict = {}
     for key, val in csv.reader(open(index_dict_file)):
         index_dict[int(key)] = val
-
+    print("Computing nearest-neighbors...")
+    neighbor_dict = {}
+    for i in range(index.get_n_items()):
+        if i % 1000 == 0:
+            print str(i)
+        patient_id = index_dict[i]
+        neighbors = index.get_nns_by_item(i=i, n=n_neighbors, search_k=-1, include_distances=False)
+        neighbor_ids = [index_dict[x] for x in neighbors]
+        neighbor_dict[patient_id] = neighbor_ids
     f = open(out_dir+"patient_walks.txt", 'wb')
     for i in range(index.get_n_items()):
         if i % 1000 == 0:
@@ -61,8 +67,8 @@ def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 2
         patient_id = index_dict[i]
         patient_sentences = ""
         for j in range(walks_per_patient):
-            sentence = generate_sentence(start=patient_id,index=index,
-                                    patient_dict=patient_dict,index_dict=index_dict,n_neighbors=n_neighbors,walk_size=walk_size)
+            sentence = generate_sentence(start=patient_id,neighbor_dict=neighbor_dict,
+                                        n_neighbors=n_neighbors,walk_size=walk_size)
             patient_sentences = sentence + "\n"
             ## Write it ##
         f.write(patient_sentences)
