@@ -43,27 +43,26 @@ def generate_sentence(start,index,patient_dict,index_dict,n_neighbors,walk_size)
     return sentence
 
 
-def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 100,walks_per_patient=100,walk_size=100,out_dir="./"):
+def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 25,walks_per_patient=5,walk_size=10,out_dir="./"):
+    index = AnnoyIndex(df.shape[1])
+    index.load(index_file)
+    patient_dict = {}
+    for key, val in csv.reader(open(patient_dict_file)):
+        patient_dict[key] = int(val)
 
-index = AnnoyIndex(df.shape[1])
-index.load(index_file)
-patient_dict = {}
-for key, val in csv.reader(open(patient_dict_file)):
-    patient_dict[key] = int(val)
+    index_dict = {}
+    for key, val in csv.reader(open(index_dict_file)):
+        index_dict[int(key)] = val
 
-index_dict = {}
-for key, val in csv.reader(open(index_dict_file)):
-    index_dict[int(key)] = val
-
-f = open(out_dir+"patient_walks.txt", 'wb')
-for i in range(index.get_n_items()):
-    if i % 1000 == 0:
-        print str(i)
-    patient_id = index_dict[i]
-    patient_sentences = ""
-    for j in range(walks_per_patient):
-        sentence = generate_sentence(start=patient_id,index=index,
-                                patient_dict=patient_dict,index_dict=index_dict,n_neighbors=n_neighbors,walk_size=walk_size)
-        patient_sentences = sentence + "\n"
-        ## Write it ##
-    f.write(patient_sentences)
+    f = open(out_dir+"patient_walks.txt", 'wb')
+    for i in range(index.get_n_items()):
+        if i % 1000 == 0:
+            print str(i)
+        patient_id = index_dict[i]
+        patient_sentences = ""
+        for j in range(walks_per_patient):
+            sentence = generate_sentence(start=patient_id,index=index,
+                                    patient_dict=patient_dict,index_dict=index_dict,n_neighbors=n_neighbors,walk_size=walk_size)
+            patient_sentences = sentence + "\n"
+            ## Write it ##
+        f.write(patient_sentences)
