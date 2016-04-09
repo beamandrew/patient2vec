@@ -42,7 +42,7 @@ def generate_sentence(start,neighbor_dict,n_neighbors,walk_size):
     return sentence
 
 
-def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 25,walks_per_patient=5,walk_size=50,out_dir="./"):
+def create_walks(df,index_file,patient_dict_file,index_dict_file,n_neighbors = 25,walks_per_patient=10,walk_size=50,out_dir="./"):
     index = AnnoyIndex(df.shape[1])
     index.load(index_file)
     patient_dict = {}
